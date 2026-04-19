@@ -96,6 +96,20 @@ ssh mc@target-server "sudo whoami"
 
 ---
 
+## Automated Host Certificate Rotation
+
+The infrastructure includes a self-healing identity mechanism on the `target-server`:
+*   **Rotation Monitor**: A background script (`rotate-host-cert.sh`) analyzes the current host certificate's validity range.
+*   **80% Threshold**: When 80% of the certificate's lifetime has passed, the server automatically generates a new key and requests a fresh signature from the CA.
+*   **Zero-Downtime Reload**: The script signals `sshd` via `SIGHUP` to pick up the new identity without dropping active connections.
+
+You can monitor rotation events in the container logs:
+```bash
+docker compose logs -f target-server
+```
+
+---
+
 ## Administrative Access (Advanced)
 
 To manage the CA server itself, use the pre-baked management key on the administrative port (**2222**). This port strictly forbids passwords and requires the `user_identity` key.

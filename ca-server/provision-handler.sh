@@ -20,8 +20,8 @@ case "$CMD" in
         PUBKEY=$(echo "$CMD" | cut -d' ' -f3-)
         TEMP_DIR=$(mktemp -d)
         echo "$PUBKEY" > "$TEMP_DIR/key.pub"
-        sudo ssh-keygen -q -s /etc/ssh/ca/host_ca -I "host-cert-${HOSTNAME}" -h -n "${HOSTNAME},${CLIENT_IP}" -V +52w "$TEMP_DIR/key.pub" 2>/dev/null
-        echo "CA: Issued host certificate for $HOSTNAME ($CLIENT_IP)" >&2
+        sudo ssh-keygen -q -s /etc/ssh/ca/host_ca -I "host-cert-${HOSTNAME}" -h -n "${HOSTNAME},${CLIENT_IP}" -V +90s "$TEMP_DIR/key.pub" 2>/dev/null
+        echo "CA: Issued host certificate for $HOSTNAME ($CLIENT_IP) [SIMULATION MODE: 90s]" >&2
         ssh-keygen -L -f "$TEMP_DIR/key-cert.pub" >&2
         cat "$TEMP_DIR/key-cert.pub"
         rm -rf "$TEMP_DIR"

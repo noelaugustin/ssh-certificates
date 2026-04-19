@@ -24,7 +24,8 @@ chmod 600 /root/.ssh/id_ed25519
 echo "BOOTSTRAP: Requesting host certificate from CA..."
 echo "BOOTSTRAP: Hostname: $(hostname), Requested Principals: $(hostname), IP Verification Required."
 PUB_KEY=$(cat /etc/ssh/ssh_host_ed25519_key.pub)
-SSHPASS=provision sshpass -e ssh -o ProxyCommand="socat TCP4:ca-server:22,bind=:800 -" provision@ca-server "sign_host_key $(hostname) $PUB_KEY" > /etc/ssh/ssh_host_ed25519_key-cert.pub
+RANDOM_PORT=$((500 + RANDOM % 500))
+SSHPASS=provision sshpass -e ssh -o ProxyCommand="socat TCP4:ca-server:22,bind=:${RANDOM_PORT} -" provision@ca-server "sign_host_key $(hostname) $PUB_KEY" > /etc/ssh/ssh_host_ed25519_key-cert.pub
 
 echo "Host certificate received. Details:"
 ssh-keygen -L -f /etc/ssh/ssh_host_ed25519_key-cert.pub
@@ -38,5 +39,9 @@ echo "npc" > /etc/ssh/auth_principals/npc
 echo "mc" > /etc/ssh/auth_principals/mc
 echo "god" > /etc/ssh/auth_principals/root
 
-# Start sshd
-/usr/sbin/sshd -D -e
+# Setup and start background rotation monitor
+chmod +x /usr/local/bin/rotate-host-cert.sh
+/usr/local/bin/rotate-host-cert.sh &
+
+# Start sshd with PID tracking
+/usr/sbin/sshd -D -e -p 22 -o "PidFile=/var/run/sshd.pid"
