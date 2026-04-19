@@ -74,13 +74,13 @@ Connect to the CA's issuance port (Port 22) using your **password** (which is th
 **For a standard user (`npc`):**
 ```bash
 # Password: npc
-ssh -p 22 -A npc@ca-server
+ssh -A npc@ca-server
 ```
 
 **For a sudo-enabled user (`mc`):**
 ```bash
 # Password: mc
-ssh -p 22 -A mc@ca-server
+ssh -A mc@ca-server
 ```
 
 ### 4. Access the Target Infrastructure
