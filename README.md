@@ -52,60 +52,58 @@ docker compose up -d --build
 
 ---
 
-## Manual Verification Guide
+## Manual Verification Guide (Human-Friendly)
 
-Follow these steps to verify the infrastructure without relying on automated demo scripts.
+Follow these steps to experience the certificate-based workflow manually.
 
-### 1. Verify Host Trust
-From the `client` container, attempt to connect to the CA. Since trust is pre-baked globally, you should be prompted for a password **immediately** without many "Host identity not established" warnings.
+### 1. Enter the Client Workstation
+Open a shell inside the client container:
 ```bash
-docker exec -it client ssh -p 22 npc@ca-server
-```
-*(Accept the password 'npc' if you see the prompt. It will immediately close the connection as issuance is a ForceCommand, but the lack of a host warning proves trust is working.)*
-
-### 2. Issue a User Certificate Manually
-You must use an SSH Agent because the issuance script adds the certificate directly to your active session.
-
-```bash
-# Enter the client container
 docker exec -it client bash
+```
 
-# 1. Start an agent and add your base identity
+### 2. Initialize your Authentication Agent
+Inside the client container, start the SSH agent. This agent will store the short-lived certificates issued by the CA.
+```bash
 eval $(ssh-agent)
-
-# 2. Connect to the CA Port 22 with Agent Forwarding (-A)
-# Use 'npc' as both the username and password
-SSHPASS=npc sshpass -e ssh -p 22 -A npc@ca-server
-
-# 3. Verify the certificate has been added to your agent
-ssh-add -L
 ```
-*You should see a line starting with `ssh-ed25519-cert-v01@openssh.com...`.*
 
-### 3. Access the Target Server
-Using the certificate you just issued, log into the target server. Because of principal mapping, you do not need to manage `authorized_keys` on the target.
+### 3. Request your Identity Certificate
+Connect to the CA's issuance port (Port 22) using your **password** (which is the same as your username). You MUST use the `-A` flag to forward your agent so the CA can inject the certificate back into it.
+
+**For a standard user (`npc`):**
 ```bash
+# Password: npc
+ssh -p 22 -A npc@ca-server
+```
+
+**For a sudo-enabled user (`mc`):**
+```bash
+# Password: mc
+ssh -p 22 -A mc@ca-server
+```
+
+### 4. Access the Target Infrastructure
+Now that your agent has a valid certificate (verify with `ssh-add -L`), you can log into any target server seamlessly without a password or host warnings.
+
+```bash
+# Connect as npc
 ssh npc@target-server
-```
-*You should be logged in instantly without a password.*
 
-### 4. Verify Identity Escalation (Sudo)
-Repeat the issuance process for the `mc` (Main Character) user and verify sudo access.
-```bash
-# Request MC certificate
-SSHPASS=mc sshpass -e ssh -p 22 -A mc@ca-server
-
-# Login and test sudo
+# Connect as mc and verify sudo escalation
 ssh mc@target-server "sudo whoami"
-# Should return 'root'
 ```
 
-### 5. Verify CA Management Port (2222)
-Verify that you can access the CA's management interface using your pre-baked `user_identity` key (skipping passwords).
+---
+
+## Administrative Access (Advanced)
+
+To manage the CA server itself, use the pre-baked management key on the administrative port (**2222**). This port strictly forbids passwords and requires the `user_identity` key.
+
 ```bash
+# From within the client container:
 ssh -i /home/user/.ssh/id_ed25519 -p 2222 npc@ca-server
 ```
-*This should drop you into a shell on the CA server.*
 
 ---
 
